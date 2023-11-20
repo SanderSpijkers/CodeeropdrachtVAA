@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 
 namespace GildedRose.Console
 {
@@ -10,8 +11,8 @@ namespace GildedRose.Console
             System.Console.WriteLine("OMGHAI!");
 
             var app = new Program()
-                          {
-                              Items = new List<Item>
+            {
+                Items = new List<Item>
                                           {
                                               new Item {Name = "+5 Dexterity Vest", SellIn = 10, Quality = 20},
                                               new Item {Name = "Aged Brie", SellIn = 2, Quality = 0},
@@ -26,7 +27,7 @@ namespace GildedRose.Console
                                               new Item {Name = "Conjured Mana Cake", SellIn = 3, Quality = 6}
                                           }
 
-                          };
+            };
 
             app.UpdateQuality();
 
@@ -36,80 +37,152 @@ namespace GildedRose.Console
 
         public void UpdateQuality()
         {
-            for (var i = 0; i < Items.Count; i++)
+            foreach (var item in Items)
             {
-                if (Items[i].Name != "Aged Brie" && Items[i].Name != "Backstage passes to a TAFKAL80ETC concert")
-                {
-                    if (Items[i].Quality > 0)
-                    {
-                        if (Items[i].Name != "Sulfuras, Hand of Ragnaros")
-                        {
-                            Items[i].Quality = Items[i].Quality - 1;
-                        }
-                    }
-                }
-                else
-                {
-                    if (Items[i].Quality < 50)
-                    {
-                        Items[i].Quality = Items[i].Quality + 1;
+                ItemQualityType itemQualityType = SetItemQualityType(item);
 
-                        if (Items[i].Name == "Backstage passes to a TAFKAL80ETC concert")
-                        {
-                            if (Items[i].SellIn < 11)
-                            {
-                                if (Items[i].Quality < 50)
-                                {
-                                    Items[i].Quality = Items[i].Quality + 1;
-                                }
-                            }
-
-                            if (Items[i].SellIn < 6)
-                            {
-                                if (Items[i].Quality < 50)
-                                {
-                                    Items[i].Quality = Items[i].Quality + 1;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (Items[i].Name != "Sulfuras, Hand of Ragnaros")
+                switch (itemQualityType)
                 {
-                    Items[i].SellIn = Items[i].SellIn - 1;
-                }
+                    case ItemQualityType.AgedBrie:
+                        UpdateAggedBrieQuality(item);
+                        break;
 
-                if (Items[i].SellIn < 0)
-                {
-                    if (Items[i].Name != "Aged Brie")
-                    {
-                        if (Items[i].Name != "Backstage passes to a TAFKAL80ETC concert")
-                        {
-                            if (Items[i].Quality > 0)
-                            {
-                                if (Items[i].Name != "Sulfuras, Hand of Ragnaros")
-                                {
-                                    Items[i].Quality = Items[i].Quality - 1;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            Items[i].Quality = Items[i].Quality - Items[i].Quality;
-                        }
-                    }
-                    else
-                    {
-                        if (Items[i].Quality < 50)
-                        {
-                            Items[i].Quality = Items[i].Quality + 1;
-                        }
-                    }
+                    case ItemQualityType.BackstagePass:
+                        UpdateBackstagePassQuality(item);
+                        break;
+
+                    case ItemQualityType.Conjured:
+                        UpdateConjuredItemQuality(item);
+                        break;
+
+                    case ItemQualityType.LegendaryItem:
+                        break;
+
+                    default:
+                        DefaultUpdateQuality(item);
+                        break;
                 }
             }
         }
 
+        public Item DefaultUpdateQuality(Item item)
+        {
+            if (item.SellIn > 0)
+            {
+                item.Quality = item.Quality - 1;
+            }
+            else
+            {
+                item.Quality = item.Quality - 2;
+            }
+
+            CheckForQualityMinAndMax(item.Quality);
+
+            return item;
+        }
+
+        public Item UpdateAggedBrieQuality(Item item)
+        {
+            item.Quality = item.Quality + 1;
+
+            CheckForQualityMinAndMax(item.Quality);
+
+            return item;
+        }
+
+        public Item UpdateBackstagePassQuality(Item item)
+        {
+            if (item.SellIn > 10)
+            {
+                item.Quality = item.Quality + 1;
+            }
+
+            if (item.SellIn <= 10 && item.SellIn > 5)
+            {
+                item.Quality = item.Quality + 2;
+            }
+
+            if (item.SellIn < 5 && item.SellIn >= 0)
+            {
+                item.Quality = item.Quality + 3;
+            }
+
+            if (item.SellIn < 0)
+            {
+                item.Quality = 0;
+            }
+
+            CheckForQualityMinAndMax(item.Quality);
+
+            return item;
+        }
+
+        public Item UpdateConjuredItemQuality(Item item)
+        {
+            if (item.SellIn > 0)
+            {
+                item.Quality = item.Quality - 2;
+            }
+            else
+            {
+                item.Quality = item.Quality - 4;
+            }
+
+            CheckForQualityMinAndMax(item.Quality);
+
+            return item;
+        }
+
+        public ItemQualityType SetItemQualityType(Item item)
+        {
+            ItemQualityType itemQualityType = ItemQualityType.Default;
+
+            if (item.Name.Contains("Aged Brie"))
+            {
+                itemQualityType = ItemQualityType.AgedBrie;
+            }
+            if (item.Name.Contains("Backstage pass"))
+            {
+                itemQualityType = ItemQualityType.BackstagePass;
+            }
+            if (item.Name.Contains("Conjured"))
+            {
+                itemQualityType = ItemQualityType.Conjured;
+            }
+            if (item.Name.Contains("Sulfuras"))
+            {
+                itemQualityType = ItemQualityType.LegendaryItem;
+            }
+
+            return itemQualityType;
+        }
+
+        public int CheckForQualityMinAndMax(int quality)
+        {
+            int MinimumQuality = 0;
+            int MaximumQuality = 50;
+
+            if (quality < MinimumQuality)
+            {
+                quality = MinimumQuality;
+            }
+
+            if (quality > MaximumQuality)
+            {
+                quality = MaximumQuality;
+            }
+
+            return quality;
+        }
+    }
+
+    public enum ItemQualityType
+    {
+        Default = 0,
+        AgedBrie = 1,
+        BackstagePass = 2,
+        Conjured = 3,
+        LegendaryItem = 99,
     }
 
     public class Item
@@ -120,5 +193,4 @@ namespace GildedRose.Console
 
         public int Quality { get; set; }
     }
-
 }
